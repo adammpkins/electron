@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_cast.h"
 
 #include <utility>
+#include <ctime>
 
 #include "base/logging.h"
 #include "base/values.h"
@@ -12,7 +13,6 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
-#include "shell/browser/cast/cast_device_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -90,7 +90,7 @@ void Cast::CastMedia(const std::string& device_id,
   }
 
   // For now, simulate successful cast session creation
-  std::string session_id = "cast_session_" + device_id + "_" + std::to_string(rand());
+  std::string session_id = "cast_session_" + device_id + "_" + std::to_string(time(nullptr));
   
   LOG(INFO) << "Starting cast session " << session_id 
             << " to device " << device_id 
