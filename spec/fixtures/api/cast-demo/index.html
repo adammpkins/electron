@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Electron Cast Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #005a99;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .device-list {
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .device-item {
+            background-color: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cast-button {
+            background-color: #ff4444;
+            font-size: 16px;
+            padding: 15px 30px;
+        }
+        .log {
+            background-color: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: scroll;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Electron Cast Demo</h1>
+        
+        <div class="section">
+            <h2>Device Discovery</h2>
+            <button id="startDiscovery">Start Discovery</button>
+            <button id="stopDiscovery">Stop Discovery</button>
+            <button id="refreshDevices">Refresh Devices</button>
+            
+            <div class="device-list">
+                <h3>Available Cast Devices:</h3>
+                <div id="deviceList">No devices found. Click "Start Discovery" to search for Cast devices.</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Cast Media</h2>
+            <div>
+                <input type="text" id="mediaUrl" placeholder="Enter media URL (e.g., http://example.com/video.mp4)" value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
+                <br>
+                <p>Example URLs:</p>
+                <ul>
+                    <li>Big Buck Bunny: https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4</li>
+                    <li>Sample MP3: https://www.soundjay.com/misc/beep-07.wav</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Active Sessions</h2>
+            <div id="sessionList">No active cast sessions</div>
+        </div>
+        
+        <div class="section">
+            <h2>Event Log</h2>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let discoveredDevices = [];
+        let activeSessions = [];
+        
+        // DOM elements
+        const startDiscoveryBtn = document.getElementById('startDiscovery');
+        const stopDiscoveryBtn = document.getElementById('stopDiscovery');
+        const refreshDevicesBtn = document.getElementById('refreshDevices');
+        const deviceList = document.getElementById('deviceList');
+        const mediaUrlInput = document.getElementById('mediaUrl');
+        const sessionList = document.getElementById('sessionList');
+        const logDiv = document.getElementById('log');
+        
+        // Logging function
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+        
+        // Event listeners
+        startDiscoveryBtn.addEventListener('click', async () => {
+            log('Starting Cast device discovery...');
+            await ipcRenderer.invoke('cast-start-discovery');
+            startDiscoveryBtn.disabled = true;
+            stopDiscoveryBtn.disabled = false;
+        });
+        
+        stopDiscoveryBtn.addEventListener('click', async () => {
+            log('Stopping Cast device discovery...');
+            await ipcRenderer.invoke('cast-stop-discovery');
+            startDiscoveryBtn.disabled = false;
+            stopDiscoveryBtn.disabled = true;
+        });
+        
+        refreshDevicesBtn.addEventListener('click', async () => {
+            log('Refreshing device list...');
+            const devices = await ipcRenderer.invoke('cast-get-devices');
+            updateDeviceList(devices);
+        });
+        
+        // Update device list display
+        function updateDeviceList(devices) {
+            discoveredDevices = devices;
+            
+            if (devices.length === 0) {
+                deviceList.innerHTML = 'No devices found. Click "Start Discovery" to search for Cast devices.';
+                return;
+            }
+            
+            deviceList.innerHTML = devices.map(device => `
+                <div class="device-item">
+                    <div>
+                        <strong>${device.name}</strong><br>
+                        <small>ID: ${device.id} | Type: ${device.type} | Status: ${device.status}</small>
+                    </div>
+                    <button class="cast-button" onclick="castToDevice('${device.id}')">Cast to Device</button>
+                </div>
+            `).join('');
+        }
+        
+        // Cast media to device
+        async function castToDevice(deviceId) {
+            const mediaUrl = mediaUrlInput.value.trim();
+            if (!mediaUrl) {
+                alert('Please enter a media URL');
+                return;
+            }
+            
+            log(`Casting media to device ${deviceId}: ${mediaUrl}`);
+            await ipcRenderer.invoke('cast-media', deviceId, mediaUrl);
+        }
+        
+        // Stop casting session
+        async function stopSession(sessionId) {
+            log(`Stopping cast session: ${sessionId}`);
+            await ipcRenderer.invoke('cast-stop-casting', sessionId);
+        }
+        
+        // Update session list display
+        function updateSessionList() {
+            if (activeSessions.length === 0) {
+                sessionList.innerHTML = 'No active cast sessions';
+                return;
+            }
+            
+            sessionList.innerHTML = activeSessions.map(session => `
+                <div class="device-item">
+                    <div>
+                        <strong>Session: ${session.sessionId}</strong><br>
+                        <small>Device: ${session.deviceId}</small>
+                    </div>
+                    <button onclick="stopSession('${session.sessionId}')">Stop Casting</button>
+                </div>
+            `).join('');
+        }
+        
+        // IPC event listeners from main process
+        ipcRenderer.on('cast-device-discovered', (event, device) => {
+            log(`Device discovered: ${device.deviceName} (${device.deviceId})`);
+            refreshDevicesBtn.click(); // Refresh the device list
+        });
+        
+        ipcRenderer.on('cast-device-lost', (event, device) => {
+            log(`Device lost: ${device.deviceId}`);
+            refreshDevicesBtn.click(); // Refresh the device list
+        });
+        
+        ipcRenderer.on('cast-session-started', (event, session) => {
+            log(`Cast session started: ${session.sessionId} on device ${session.deviceId}`);
+            activeSessions.push(session);
+            updateSessionList();
+        });
+        
+        ipcRenderer.on('cast-session-ended', (event, session) => {
+            log(`Cast session ended: ${session.sessionId}`);
+            activeSessions = activeSessions.filter(s => s.sessionId !== session.sessionId);
+            updateSessionList();
+        });
+        
+        ipcRenderer.on('cast-error', (event, error) => {
+            log(`Cast error: ${error.message}`);
+        });
+        
+        // Initialize
+        log('Electron Cast Demo loaded');
+        log('Click "Start Discovery" to begin searching for Cast devices');
+        
+        // Load initial device list
+        refreshDevicesBtn.click();
+    </script>
+</body>
+</html>

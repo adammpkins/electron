@@ -53,6 +53,7 @@
 #define ELECTRON_BROWSER_BINDINGS(V)      \
   V(electron_browser_app)                 \
   V(electron_browser_auto_updater)        \
+  V(electron_browser_cast)                \
   V(electron_browser_content_tracing)     \
   V(electron_browser_crash_reporter)      \
   V(electron_browser_desktop_capturer)    \

@@ -1,5 +1,6 @@
 // Renderer side modules, please sort alphabetically.
 export const rendererModuleList: ElectronInternal.ModuleEntry[] = [
+  { name: 'cast', loader: () => require('./cast') },
   { name: 'clipboard', loader: () => require('./clipboard') },
   { name: 'contextBridge', loader: () => require('./context-bridge') },
   { name: 'crashReporter', loader: () => require('./crash-reporter') },

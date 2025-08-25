@@ -1,0 +1,14 @@
+{
+  "name": "electron-cast-demo",
+  "version": "1.0.0",
+  "description": "Demo application showcasing Electron Cast API",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Electron Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "latest"
+  }
+}
