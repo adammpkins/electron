@@ -254,6 +254,8 @@ filenames = {
     "shell/browser/api/electron_api_base_window.h",
     "shell/browser/api/electron_api_browser_window.cc",
     "shell/browser/api/electron_api_browser_window.h",
+    "shell/browser/api/electron_api_chromecast.cc",
+    "shell/browser/api/electron_api_chromecast.h",
     "shell/browser/api/electron_api_content_tracing.cc",
     "shell/browser/api/electron_api_cookies.cc",
     "shell/browser/api/electron_api_cookies.h",

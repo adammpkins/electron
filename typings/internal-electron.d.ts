@@ -386,6 +386,26 @@ declare namespace Chrome {
 
     type SendMessageCallback = (result: any) => void;
   }
+
+  interface ChromecastDevice {
+    id: string;
+    name: string;
+    host: string;
+    port: number;
+    type: string;
+  }
+
+  interface Chromecast extends NodeJS.EventEmitter {
+    // Events
+    on(event: 'device', listener: (device: ChromecastDevice) => void): this;
+    on(event: 'device-removed', listener: (device: ChromecastDevice) => void): this;
+    
+    // Methods  
+    startDiscovery(): void;
+    stopDiscovery(): void;
+    getDevices(): ChromecastDevice[];
+    connect(deviceId: string): Promise<void>;
+  }
 }
 
 interface Global extends NodeJS.Global {
